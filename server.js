@@ -52,7 +52,7 @@
 // });
 
 // app.listen(PORT, () => console.log(`🚀 Servidor rodando em http://localhost:${PORT}`));
-import 'dotenv/config';
+// import 'dotenv/config'; CASO USAR LOCALMENTE PRECISA DESTA LINHA
 import express from "express";
 import fs from "fs";
 import csv from "csv-parser";
