@@ -6,7 +6,7 @@ import path from "path";
 import bodyParser from "body-parser";
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const convidados = new Map();
 
 const qrPath = path.join("public/qrcodes");
@@ -24,31 +24,31 @@ fs.createReadStream("Convidados_casamento.csv")
 app.use(bodyParser.json());
 app.use(express.static("public"));
 
-// 🧩 Gera os QR Codes com nome + família
+// 🧩 Gera os QR Codes
 app.get("/gerar-qrcodes", async (req, res) => {
   for (const [key, c] of convidados) {
     const nomeArquivo = `${c.nome.replace(/\s+/g, "_")}_${c.familia.replace(/\s+/g, "_")}.png`;
-    const conteudo = `${c.nome} ${c.familia}`;
-    await qrcode.toFile(path.join(qrPath, nomeArquivo), conteudo);
+    const conteudo = `${c.nome} ${c.familia}`; // formato reconhecido pelo servidor
+    await qrcode.toFile(path.join(qrPath, nomeArquivo), conteudo, { errorCorrectionLevel: "H" });
   }
   res.send("✅ QR Codes gerados em /public/qrcodes/");
 });
 
-// 🧠 Check-in (baseado em nome + família)
+// 🧠 Check-in
 app.post("/checkin", (req, res) => {
   const { nomeFamilia } = req.body;
   const c = convidados.get(nomeFamilia);
   if (!c) return res.status(404).send("Convidado não encontrado.");
   if (c.presente) return res.send(`${c.nome} ${c.familia} já registrado como presente.`);
   c.presente = true;
-  res.send(`Presença registrada: ${c.nome} ${c.familia}`);
+  res.send(`✅ Presença registrada: ${c.nome} ${c.familia}`);
 });
 
-// 📋 Retorna a lista de convidados (para o painel)
+// 📋 Retorna lista
 app.get("/lista", (req, res) => {
   const lista = [];
   convidados.forEach((c, key) => lista.push({ nomeFamilia: key, ...c }));
   res.json(lista);
 });
 
-app.listen(PORT, () => console.log(`Servidor rodando em http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Servidor rodando em http://localhost:${PORT}`));
