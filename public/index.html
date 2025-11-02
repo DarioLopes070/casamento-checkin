@@ -2,20 +2,65 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Check-in Casamento 💍</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Check-in Casamento com Leitor QR</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet" />
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
-<body class="bg-pink-50 flex flex-col items-center justify-center h-screen">
-  <div class="bg-white p-6 rounded-2xl shadow-xl text-center w-96">
+<body class="bg-pink-50 flex flex-col items-center justify-center min-h-screen p-4">
+  <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md text-center">
     <h1 class="text-2xl font-bold text-pink-600 mb-4">Check-in de Convidados 💒</h1>
-    <input id="input" type="text" placeholder="Digite ou cole o nome completo" class="border rounded w-full p-2 mb-4">
-    <button id="btn" class="bg-pink-600 text-white px-4 py-2 rounded w-full hover:bg-pink-700">
-      Confirmar Presença
-    </button>
-    <p id="res" class="mt-4 text-sm"></p>
+
+    <div id="reader" style="width:100%"></div>
+
+    <p id="status" class="mt-4 text-lg"></p>
   </div>
 
-  <script src="scripts/checkin.js"></script>
+  <script>
+    const statusEl = document.getElementById("status");
+
+    function onScanSuccess(decodedText, decodedResult) {
+      // decodedText é o texto do QR Code (ex: "JUNIOR Maria clara")
+      statusEl.textContent = `Lido: ${decodedText}. Confirmando presença...`;
+      html5QrcodeScanner.clear(); // para a leitura para evitar múltiplos envios
+
+      fetch("/checkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nomeFamilia: decodedText.trim() }),
+      })
+        .then(async (res) => {
+          if (!res.ok) throw new Error(await res.text());
+          return res.text();
+        })
+        .then((msg) => {
+          statusEl.textContent = msg;
+          setTimeout(() => {
+            statusEl.textContent = "";
+            html5QrcodeScanner.start({ facingMode: "environment" });
+          }, 4000);
+        })
+        .catch((err) => {
+          statusEl.textContent = "Erro: " + err.message;
+          setTimeout(() => {
+            statusEl.textContent = "";
+            html5QrcodeScanner.start({ facingMode: "environment" });
+          }, 4000);
+        });
+    }
+
+    function onScanFailure(error) {
+      // opcional: pode mostrar mensagens de erro, mas geralmente ignoramos
+      // console.warn(`Erro na leitura: ${error}`);
+    }
+
+    const html5QrcodeScanner = new Html5QrcodeScanner(
+      "reader",
+      { fps: 10, qrbox: 250 },
+      /* verbose= */ false
+    );
+
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+  </script>
 </body>
 </html>
