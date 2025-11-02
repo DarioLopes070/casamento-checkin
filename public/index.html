@@ -19,48 +19,57 @@
   <script>
     const statusEl = document.getElementById("status");
 
+    const html5QrcodeScanner = new Html5Qrcode("reader");
+
+    function startScanner() {
+      html5QrcodeScanner
+        .start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: 250 },
+          onScanSuccess,
+          onScanFailure
+        )
+        .catch(err => {
+          statusEl.textContent = "Erro ao iniciar câmera: " + err;
+        });
+    }
+
     function onScanSuccess(decodedText, decodedResult) {
-      // decodedText é o texto do QR Code (ex: "JUNIOR Maria clara")
+      html5QrcodeScanner.pause();
+
       statusEl.textContent = `Lido: ${decodedText}. Confirmando presença...`;
-      html5QrcodeScanner.clear(); // para a leitura para evitar múltiplos envios
 
       fetch("/checkin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nomeFamilia: decodedText.trim() }),
       })
-        .then(async (res) => {
+        .then(async res => {
           if (!res.ok) throw new Error(await res.text());
           return res.text();
         })
-        .then((msg) => {
+        .then(msg => {
           statusEl.textContent = msg;
           setTimeout(() => {
             statusEl.textContent = "";
-            html5QrcodeScanner.start({ facingMode: "environment" });
-          }, 4000);
+            html5QrcodeScanner.resume();
+          }, 3000);
         })
-        .catch((err) => {
+        .catch(err => {
           statusEl.textContent = "Erro: " + err.message;
           setTimeout(() => {
             statusEl.textContent = "";
-            html5QrcodeScanner.start({ facingMode: "environment" });
-          }, 4000);
+            html5QrcodeScanner.resume();
+          }, 3000);
         });
     }
 
     function onScanFailure(error) {
-      // opcional: pode mostrar mensagens de erro, mas geralmente ignoramos
-      // console.warn(`Erro na leitura: ${error}`);
+      // Aqui você pode tratar erros de leitura, se quiser
     }
 
-    const html5QrcodeScanner = new Html5QrcodeScanner(
-      "reader",
-      { fps: 10, qrbox: 250 },
-      /* verbose= */ false
-    );
-
-    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    // Inicia a câmera assim que a página carregar
+    startScanner();
   </script>
 </body>
 </html>
