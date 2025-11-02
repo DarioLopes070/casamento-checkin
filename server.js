@@ -92,9 +92,16 @@ app.use(express.static("public"));
 
 // Rota de check-in
 app.post("/checkin", async (req, res) => {
+  // const { nomeFamilia } = req.body;
+  // const [nome, ...rest] = nomeFamilia.split(" ");
+  // const familia = rest.join(" ").trim();
   const { nomeFamilia } = req.body;
-  const [nome, ...rest] = nomeFamilia.split(" ");
-  const familia = rest.join(" ").trim();
+  const partes = nomeFamilia.split(",");
+  if (partes.length !== 2) {
+    return res.status(400).send("Formato inválido no QR code.");
+  }
+  const nome = partes[0].trim();
+  const familia = partes[1].trim();
 
   const convidado = await Convidado.findOne({ nome: nome.trim(), familia: familia.trim() });
   if (!convidado) return res.status(404).send("Convidado não encontrado.");
