@@ -90,28 +90,42 @@ app.use(express.static("public"));
   }
 })();
 
+function normalizarTexto(texto) {
+  return texto
+    .toLowerCase()
+    .normalize("NFD")                 // separa acentos
+    .replace(/[\u0300-\u036f]/g, "")  // remove acentos
+    .replace(/[(),]/g, "")            // remove parênteses e vírgulas
+    .replace(/\s+/g, "")              // remove TODOS os espaços
+    .trim();
+}
+
+
 // Rota de check-in
 app.post("/checkin", async (req, res) => {
-  // const { nomeFamilia } = req.body;
-  // const [nome, ...rest] = nomeFamilia.split(" ");
-  // const familia = rest.join(" ").trim();
-  const { nomeFamilia } = req.body;
-  const partes = nomeFamilia.split(",");
-  if (partes.length !== 2) {
-    return res.status(400).send("Formato inválido no QR code.");
-  }
-  const nome = partes[0].trim();
-  const familia = partes[1].trim();
+  const textoQR = normalizarTexto(req.body.nomeFamilia);
 
-  const convidado = await Convidado.findOne({ nome: nome.trim(), familia: familia.trim() });
-  if (!convidado) return res.status(404).send("Convidado não encontrado.");
-  if (convidado.presente) return res.send(`${convidado.nome} ${convidado.familia} já registrado.`);
+  const convidados = await Convidado.find();
+
+  const convidado = convidados.find(c => {
+    const bancoNormalizado = normalizarTexto(`${c.nome} ${c.familia}`);
+    return bancoNormalizado === textoQR;
+  });
+
+  if (!convidado) {
+    return res.status(404).send("Convidado não encontrado.");
+  }
+
+  if (convidado.presente) {
+    return res.send(`${convidado.nome} ${convidado.familia} já registrado.`);
+  }
 
   convidado.presente = true;
   await convidado.save();
 
   res.send(`Presença confirmada: ${convidado.nome} ${convidado.familia}`);
 });
+
 
 // Painel
 app.get("/lista", async (req, res) => {
