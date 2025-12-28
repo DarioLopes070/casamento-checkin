@@ -2,74 +2,21 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Check-in Casamento com Leitor QR</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet" />
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <title>Check-in</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
-<body class="bg-pink-50 flex flex-col items-center justify-center min-h-screen p-4">
-  <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md text-center">
-    <h1 class="text-2xl font-bold text-pink-600 mb-4">Check-in de Convidados 💒</h1>
+<body>
 
-    <div id="reader" style="width:100%"></div>
+  <h1>Check-in do Casamento</h1>
 
-    <p id="status" class="mt-4 text-lg"></p>
-  </div>
+  <div id="reader"></div>
+  <div id="feedback" class="feedback hidden"></div>
 
-  <script>
-    const statusEl = document.getElementById("status");
+  <!-- QR LIB -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
 
-    const html5QrcodeScanner = new Html5Qrcode("reader");
+  <!-- SEU JS (UMA ÚNICA VEZ) -->
+  <script src="/scripts/checkin.js"></script>
 
-    function startScanner() {
-      html5QrcodeScanner
-        .start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: 250 },
-          onScanSuccess,
-          onScanFailure
-        )
-        .catch(err => {
-          statusEl.textContent = "Erro ao iniciar câmera: " + err;
-        });
-    }
-
-    function onScanSuccess(decodedText, decodedResult) {
-      html5QrcodeScanner.pause();
-
-      statusEl.textContent = `Lido: ${decodedText}. Confirmando presença...`;
-
-      fetch("/checkin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nomeFamilia: decodedText.trim() }),
-      })
-        .then(async res => {
-          if (!res.ok) throw new Error(await res.text());
-          return res.text();
-        })
-        .then(msg => {
-          statusEl.textContent = msg;
-          setTimeout(() => {
-            statusEl.textContent = "";
-            html5QrcodeScanner.resume();
-          }, 3000);
-        })
-        .catch(err => {
-          statusEl.textContent = "Erro: " + err.message;
-          setTimeout(() => {
-            statusEl.textContent = "";
-            html5QrcodeScanner.resume();
-          }, 3000);
-        });
-    }
-
-    function onScanFailure(error) {
-      // Aqui você pode tratar erros de leitura, se quiser
-    }
-
-    // Inicia a câmera assim que a página carregar
-    startScanner();
-  </script>
 </body>
 </html>
